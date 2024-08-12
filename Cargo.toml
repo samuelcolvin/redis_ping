@@ -8,3 +8,7 @@ anyhow = "1.0.86"
 redis = { version = "0.26.1", features = ["tokio-comp", "aio"] }
 tokio = { version = "1.39.2", features = ["full"] }
 object_store = { version = "0", features = ["gcp"] }
+bytes = "1.7.1"
+arrow = { version = "52.2.0", features = [] }
+parquet = { version = "52.2.0", features = ["arrow", "async"] }
+rand = "0.8.5"
