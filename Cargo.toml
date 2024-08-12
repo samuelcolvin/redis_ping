@@ -1,0 +1,9 @@
+[package]
+name = "ping_redis"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+redis = { version = "0.26.1", features = ["tokio-comp", "aio"] }
+tokio = { version = "1.39.2", features = ["full"] }
