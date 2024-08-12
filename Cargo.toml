@@ -7,3 +7,4 @@ edition = "2021"
 anyhow = "1.0.86"
 redis = { version = "0.26.1", features = ["tokio-comp", "aio"] }
 tokio = { version = "1.39.2", features = ["full"] }
+object_store = { version = "0", features = ["gcp"] }
