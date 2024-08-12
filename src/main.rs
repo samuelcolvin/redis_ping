@@ -43,6 +43,10 @@ async fn object_store_test() -> anyhow::Result<()> {
     println!("get in {:?}", start.elapsed());
     println!("returned payload={:?}", payload);
 
+    let start = Instant::now();
+    let _ = store.get(&Path::parse(".testing/missing.txt")?).await?;
+    println!("get missing in {:?}", start.elapsed());
+
     Ok(())
 }
 
