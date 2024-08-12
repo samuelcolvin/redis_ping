@@ -8,15 +8,20 @@ async fn get_redis_value() -> anyhow::Result<()> {
     let client = redis::Client::open(connection_params)?;
     let mut con = client.get_multiplexed_async_connection().await?;
 
-    println!("setting foo...");
+    println!("setting 'foo'...");
     let start = Instant::now();
     con.set("foo", "bar").await?;
-    println!("set foo in {:?}", start.elapsed());
+    println!("set 'foo' in {:?}", start.elapsed());
 
-    println!("getting foo...");
+    println!("getting 'foo'...");
     let start = Instant::now();
     let value: Option<String> = con.get("foo").await?;
-    println!("get foo in {:?} value={:?}", start.elapsed(), value);
+    println!("get 'foo' in {:?} value={:?}", start.elapsed(), value);
+
+    println!("getting 'missing' key...");
+    let start = Instant::now();
+    let value: Option<String> = con.get("missing").await?;
+    println!("get 'missing' in {:?} value={:?}", start.elapsed(), value);
     Ok(())
 }
 
