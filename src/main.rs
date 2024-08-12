@@ -1,4 +1,5 @@
 use std::env;
+use std::hint::black_box;
 use std::time::Instant;
 
 use anyhow::Context;
@@ -12,20 +13,34 @@ async fn test_test() -> anyhow::Result<()> {
     let client = redis::Client::open(redis_dsn)?;
     let mut con = client.get_multiplexed_async_connection().await?;
 
-    println!("setting 'foo'...");
+    let key = "foo";
+    println!("setting '{key}'...");
     let start = Instant::now();
-    con.set("foo", "bar").await?;
-    println!("set 'foo' in {:?}", start.elapsed());
+    con.set(key, "bar").await?;
+    println!("set {:?} in {:?}", key, start.elapsed());
 
-    println!("getting 'foo'...");
+    println!("getting '{key}'...");
     let start = Instant::now();
-    let value: Option<String> = con.get("foo").await?;
-    println!("get 'foo' in {:?} value={:?}", start.elapsed(), value);
+    let value: Option<String> = con.get(key).await?;
+    println!("get {:?} in {:?} value={:?}", key, start.elapsed(), value);
 
     println!("getting 'missing' key...");
     let start = Instant::now();
     let value: Option<String> = con.get("missing").await?;
     println!("get 'missing' in {:?} value={:?}", start.elapsed(), value);
+
+    let key = "big_chunk";
+    println!("setting '{key}'...");
+    let start = Instant::now();
+    con.set(key, big_chunk()).await?;
+    println!("set '{}' in {:?}", key, start.elapsed());
+
+    println!("getting '{key}'...");
+    let start = Instant::now();
+    let value: Option<Vec<u8>> = con.get(key).await?;
+    println!("get '{key}' in {:?} value.is_some() {:?}", start.elapsed(), value.is_some());
+    black_box(value);
+
     Ok(())
 }
 
@@ -44,10 +59,34 @@ async fn object_store_test() -> anyhow::Result<()> {
     println!("returned payload={:?}", payload);
 
     let start = Instant::now();
-    let _ = store.get(&Path::parse(".testing/missing.txt")?).await?;
+    let response = store.get(&Path::parse(".testing/missing.txt")?).await?;
     println!("get missing in {:?}", start.elapsed());
+    black_box(response);
+
+    let big_file_path = Path::parse(".testing/big_file.txt")?;
+    let payload = PutPayload::from(big_chunk());
+    let start = Instant::now();
+    store.put(&big_file_path, payload).await?;
+    println!("put big file in {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let response = store.get(&big_file_path).await?;
+    println!("get big file in {:?}", start.elapsed());
+    black_box(response);
 
     Ok(())
+}
+
+// 100kb
+const BIG_CHUNK_SIZE: usize = 100 * 1024;
+
+fn big_chunk() -> Vec<u8> {
+    let mut v = Vec::new();
+    for i in 0..BIG_CHUNK_SIZE {
+        let byte = (i % 256) as u8;
+        v.extend_from_slice(&byte.to_be_bytes());
+    }
+    v
 }
 
 #[tokio::main]
