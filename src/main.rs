@@ -139,7 +139,7 @@ async fn build_parquet() -> anyhow::Result<()> {
     con.del(PARQUET_KEY).await?;
     let mut rng = thread_rng();
 
-    let write_count = 20;
+    let write_count = 30;
 
     let batches = (0..write_count)
         .map(|_| create_batch(&mut rng))
@@ -163,7 +163,7 @@ async fn build_parquet() -> anyhow::Result<()> {
         start.elapsed(),
         SizePretty(size as u64)
     );
-    Ok(())
+    con.del(PARQUET_KEY).await.map_err(Into::into)
 }
 
 /// WARNING: this NEEDS locking to be safe
