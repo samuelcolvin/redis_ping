@@ -1,5 +1,6 @@
 use std::env;
 use std::hint::black_box;
+use std::process::exit;
 use std::time::Instant;
 
 use anyhow::Context;
@@ -14,31 +15,26 @@ async fn test_test() -> anyhow::Result<()> {
     let mut con = client.get_multiplexed_async_connection().await?;
 
     let key = "foo";
-    println!("setting '{key}'...");
     let start = Instant::now();
     con.set(key, "bar").await?;
-    println!("set {:?} in {:?}", key, start.elapsed());
+    println!("REDIS set {:?} in {:?}", key, start.elapsed());
 
-    println!("getting '{key}'...");
     let start = Instant::now();
     let value: Option<String> = con.get(key).await?;
-    println!("get {:?} in {:?} value={:?}", key, start.elapsed(), value);
+    println!("REDIS get {:?} in {:?} value={:?}", key, start.elapsed(), value);
 
-    println!("getting 'missing' key...");
     let start = Instant::now();
     let value: Option<String> = con.get("missing").await?;
-    println!("get 'missing' in {:?} value={:?}", start.elapsed(), value);
+    println!("REDIS get 'missing' in {:?} value={:?}", start.elapsed(), value);
 
     let key = "big_chunk";
-    println!("setting '{key}'...");
     let start = Instant::now();
     con.set(key, big_chunk()).await?;
-    println!("set '{}' in {:?}", key, start.elapsed());
+    println!("REDIS set '{}' in {:?}", key, start.elapsed());
 
-    println!("getting '{key}'...");
     let start = Instant::now();
     let value: Option<Vec<u8>> = con.get(key).await?;
-    println!("get '{key}' in {:?} value.is_some() {:?}", start.elapsed(), value.is_some());
+    println!("REDIS get '{key}' in {:?} value.is_some() {:?}", start.elapsed(), value.is_some());
     black_box(value);
 
     Ok(())
@@ -51,27 +47,26 @@ async fn object_store_test() -> anyhow::Result<()> {
     let payload = PutPayload::from_static(b"this is a test");
     let start = Instant::now();
     store.put(&path, payload).await?;
-    println!("put in {:?}", start.elapsed());
+    println!("GCS put in {:?}", start.elapsed());
 
     let start = Instant::now();
     let payload = store.get(&path).await?;
-    println!("get in {:?}", start.elapsed());
-    println!("returned payload={:?}", payload);
+    println!("GCS get in {:?}", start.elapsed());
 
     let start = Instant::now();
     let response = store.get(&Path::parse(".testing/missing.txt")?).await?;
-    println!("get missing in {:?}", start.elapsed());
+    println!("GCS get missing in {:?}", start.elapsed());
     black_box(response);
 
     let big_file_path = Path::parse(".testing/big_file.txt")?;
     let payload = PutPayload::from(big_chunk());
     let start = Instant::now();
     store.put(&big_file_path, payload).await?;
-    println!("put big file in {:?}", start.elapsed());
+    println!("GCS put big file in {:?}", start.elapsed());
 
     let start = Instant::now();
     let response = store.get(&big_file_path).await?;
-    println!("get big file in {:?}", start.elapsed());
+    println!("GCS get big file in {:?}", start.elapsed());
     black_box(response);
 
     Ok(())
@@ -93,8 +88,10 @@ fn big_chunk() -> Vec<u8> {
 async fn main() {
     if let Err(e) = test_test().await {
         eprintln!("Error: {}", e);
+        exit(1);
     }
     if let Err(e) = object_store_test().await {
         eprintln!("Error: {}", e);
+        exit(2);
     }
 }
